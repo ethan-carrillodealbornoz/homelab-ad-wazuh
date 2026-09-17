@@ -1,0 +1,27 @@
+# Virtualización (discos y snapshots)
+*.vdi
+*.vmdk
+*.vhd
+*.vhdx
+*.iso
+*.ova
+*.ovf
+*.sav
+
+# Archivos de estado de VirtualBox y VMware
+*.vbox
+*.vbox-prev
+*.nvram
+*.vmx
+
+# Archivos de sistema y editores
+.DS_Store
+Thumbs.db
+.vscode/
+
+# Archivos con datos sensibles o claves
+*.pem
+*.key
+*.pfx
+secrets/
+passwords.txt
