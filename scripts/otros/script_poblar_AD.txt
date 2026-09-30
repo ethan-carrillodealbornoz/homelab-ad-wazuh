@@ -1,0 +1,22 @@
+# 1. Crear la estructura de Unidades Organizativas (OUs)
+New-ADOrganizationalUnit -Name "LAB_Corp" -Path "DC=lab,DC=local"
+New-ADOrganizationalUnit -Name "Users" -Path "OU=LAB_Corp,DC=lab,DC=local"
+New-ADOrganizationalUnit -Name "Admins" -Path "OU=LAB_Corp,DC=lab,DC=local"
+New-ADOrganizationalUnit -Name "ServiceAccounts" -Path "OU=LAB_Corp,DC=lab,DC=local"
+
+# 2. Crear un usuario estándar (Víctima / Empleado)
+$passwordUsuario = ConvertTo-SecureString "UserPass123!" -AsPlainText -Force
+New-ADUser -Name "John Doe" -GivenName "John" -Surname "Doe" `
+    -SamAccountName "jdoe" -UserPrincipalName "jdoe@lab.local" `
+    -Path "OU=Users,OU=LAB_Corp,DC=lab,DC=local" `
+    -AccountPassword $passwordUsuario -Enabled $true -ChangePasswordAtLogon $false
+
+# 3. Crear una Cuenta de Servicio vulnerable a Kerberoasting (con SPN asignado)
+$passwordSvc = ConvertTo-SecureString "ServicePass123!" -AsPlainText -Force
+New-ADUser -Name "MSSQL Service Account" -SamAccountName "svc_mssql" `
+    -UserPrincipalName "svc_mssql@lab.local" `
+    -Path "OU=ServiceAccounts,OU=LAB_Corp,DC=lab,DC=local" `
+    -AccountPassword $passwordSvc -Enabled $true -ChangePasswordAtLogon$false
+
+# Asignar Service Principal Name (SPN) para habilitar Kerberoasting
+Set-ADUser -Identity "svc_mssql" -ServicePrincipalNames @{Add="MSSQLSvc/DC01.lab.local:1433"}
