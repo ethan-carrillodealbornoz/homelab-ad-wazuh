@@ -1,42 +1,98 @@
-# 🛡️ Cybersecurity Home Lab — Fase 1: Perímetro y Segmentación de Red
+# 🛡️ Enterprise Cybersecurity & Threat Detection Homelab (`lab.local`)
 
-## 📌 Descripción General
-Despliegue e instalación de un cortafuegos/enrutador **pfSense CE 2.9.0** virtualizado en **Oracle VM VirtualBox** sobre un equipo anfitrión con procesador AMD Ryzen 7 9700X y 32 GB de RAM.
+Este repositorio contiene la documentación técnica, diagramas de arquitectura, procedimientos de despliegue y bitácoras de troubleshooting para un laboratorio de ciberseguridad orientado a **Blue Team, Threat Hunting y Detección de Amenazas**.
 
-El objetivo principal de esta fase es aislar completamente el tráfico del laboratorio de ciberseguridad de la red doméstica física, garantizando un entorno seguro para pruebas de Red Team y Blue Team.
-
----
-
-## 🌐 Topología y Segmentación de Red
-
-| Interfaz | Adaptador VirtualBox | Interfaz SO | IP / Máscara | Función |
-| :--- | :--- | :--- | :--- | :--- |
-| **WAN** | Adaptador Puente (*Bridge*) | `em0` | `192.168.0.177/24` (DHCP) | Conexión externa a Internet |
-| **LAN** | Red Interna (`lab-aislado`) | `em1` | `192.168.1.1/24` (Estática) | Gateway de la red aislada de víctimas/atacantes |
+El entorno simula una red corporativa con **Active Directory Domain Services (AD DS)** integrada con un **SIEM/XDR (Wazuh)** para la ingesta, análisis y correlación de eventos de seguridad en tiempo real.
 
 ---
 
-## ⚙️ Pasos de Despliegue Realizados
-
-1. **Configuración del Hipervisor:**
-   - Creación de la máquina virtual `pfSense-Router` con 1 GB de RAM y 1 vCPU.
-   - Configuración de doble tarjeta de red:
-     - **Adaptador 1:** Puente (*Realtek PCIe 2.5GbE Controller*).
-     - **Adaptador 2:** Red Interna (`lab-aislado`) con Modo Promiscuo configurado en *Permitir Todo*.
-
-2. **Instalación del Sistema Operativo:**
-   - Arranque mediante ISO oficial de pfSense CE v2.9.0.
-   - Instalación y particionado en el disco virtual `ada0`.
-   - Desmontaje del medio óptico virtual (.ISO) para evitar bucles de arranque.
-
-3. **Verificación de la Consola de Administración:**
-   - Asignación exitosa de direcciones IP y verificación de la consola interactiva de FreeBSD.
+## 📐 Arquitectura de Red y Topología
 
 ```text
-FreeBSD/amd64 (pfSense.home.arpa) (ttyv0)
-Netgate Device ID: 5d6d59ffc31c76ca64f9
+                     [ Internet ]
+                          │
+                          ▼
+              ┌───────────────────────┐
+              │   pfSense (Gateway)   │
+              │     192.168.1.1       │
+              └───────────┬───────────┘
+                          │
+         ┌────────────────┴────────────────┐
+         │       Red Interna (LAN)         │
+         │        192.168.1.0/24           │
+         └────┬───────────────┬────────────┘
+              │               │
+              ▼               ▼
+     ┌────────────────┐  ┌──────────────────┐
+     │  SIEM-Wazuh    │  │       DC01       │
+     │  (Wazuh 4.14.8)│  │ (Windows Server) │
+     │  192.168.1.20  │  │   192.168.1.10   │
+     └────────────────┘  └────────┬─────────┘
+                                  │
+                                  ▼
+                         ┌──────────────────┐
+                         │  Win-11-Client   │
+                         │ (Estación jdoe)  │
+                         │  192.168.1.x     │
+                         └──────────────────┘
+```
+## 🖥️ Matriz de Infraestructura y Nodos
 
-*** Welcome to pfSense 2.9.0-RELEASE (amd64) on pfSense ***
+|**Nodo**|**Sistema Operativo**|**Rol / Servicio**|**IP Estática**|**Estado**|
+|---|---|---|---|---|
+|`pfSense`|FreeBSD / pfSense|Firewall, Gateway, Router LAN|`192.168.1.1`|🟢 Activo|
+|`DC01`|Windows Server 2022|Domain Controller (`lab.local`), DNS, AD DS|`192.168.1.10`|🟢 Activo|
+|`Win-11-Client`|Windows 11 Enterprise|Estación de Trabajo (`jdoe`)|`DHCP / Static`|🟢 Activo|
+|`SIEM-Wazuh`|AlmaLinux / Wazuh OVA|SIEM/XDR Manager, Indexer, Dashboard|`192.168.1.20`|🟢 Activo|
 
-  WAN (wan) -> em0 -> v4/DHCP4: 192.168.0.177/24
-  LAN (lan) -> em1 -> v4:       192.168.1.1/24
+## 🚀 Fases del Proyecto y Hoja de Ruta
+
+- [x] **Fase 1: Segmentación de Red y Gateway**
+    
+    - Despliegue de `pfSense` en VirtualBox.
+        
+    - Configuración del direccionamiento IP y aislamiento de la Red Interna.
+        
+- [x] **Fase 2: Infraestructura de Active Directory**
+    
+    - Promoción de `DC01` como controlador del dominio `lab.local`.
+        
+    - Estructuración de Unidades Organizativas (`LAB_Corp`) y creación de cuentas (`jdoe`, `svc_mssql`).
+        
+    - Unición de `Win-11-Client` al dominio y validación de inicio de sesión.
+        
+    - Prueba de persistencia local y remediación de hijacking de `sethc.exe`.
+        
+- [x] **Fase 3: Despliegue de SIEM/XDR (Wazuh)**
+    
+    - Importación y asignación de recursos a `SIEM-Wazuh` (`4.14.8`).
+        
+    - Configuración de persistencia de red estática (`192.168.1.20`).
+        
+    - Despliegue y registro de agentes en `DC01` y `Win-11-Client` mediante `WazuhSvc`.
+        
+    - Validación de conectividad y estado **Active** en el Dashboard.
+        
+- [ ] **Fase 4: Telemetría Avanzada (Sysmon) [Siguiente Paso]**
+    
+    - Instalación de Sysmon64 con plantilla de reglas de _SwiftOnSecurity_.
+        
+    - Configuración del canal `Microsoft-Windows-Sysmon/Operational` en `ossec.conf`.
+        
+- [ ] **Fase 5: Simulación Ofensiva y Threat Hunting**
+    
+    - Simulación de ataque Kerberoasting contra la cuenta de servicio `svc_mssql`.
+        
+    - Análisis de logs de eventos Event ID 4769 y alertas personalizadas en Wazuh.
+        
+
+## 📂 Estructura del Repositorio
+
+```Plaintext
+.
+├── README.md
+└── writeups/
+    ├── phase-1-network-pfsense.md
+    ├── phase-2-active-directory-setup.md
+    └── phase-3-wazuh-siem-deployment.md
+```
