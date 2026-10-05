@@ -1,0 +1,26 @@
+# 1. Ruta de configuración del agente de Wazuh
+$OssecConf = "C:\Program Files (x86)\ossec-agent\ossec.conf"
+
+# 2. Bloque XML del canal de Sysmon
+$SysmonConfig = @"
+  <!-- Canal de Telemetria Avanzada Sysmon -->
+  <localfile>
+    <location>Microsoft-Windows-Sysmon/Operational</location>
+    <log_format>eventchannel</log_format>
+  </localfile>
+</ossec_config>
+"@
+
+# 3. Insertar la configuración si no existe previamente
+$content = Get-Content $OssecConf -Raw
+if ($content -notlike "*Microsoft-Windows-Sysmon/Operational*") {
+    $content = $content -replace '</ossec_config>', $SysmonConfig
+    Set-Content -Path $OssecConf -Value $content -Encoding UTF8
+    Write-Host "Canal de Sysmon añadido correctamente a ossec.conf" -ForegroundColor Green
+} else {
+    Write-Host "El canal de Sysmon ya estaba en ossec.conf" -ForegroundColor Yellow
+}
+
+# 4. Reiniciar el servicio del agente de Wazuh
+Restart-Service WazuhSvc
+
