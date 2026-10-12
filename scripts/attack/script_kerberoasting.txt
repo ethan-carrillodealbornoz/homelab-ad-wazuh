@@ -1,0 +1,31 @@
+# 1. Configurar resolución mediante DC01
+sudo nano /etc/resolv.conf	
+	Modifica la línea del servidor de nombres (nameserver) para que apunte a la IP de tu DC (192.168.1.10)
+	nameserver 192.168.1.10 
+	search lab.local 
+
+# 2. Uso de bloodhound
+bloodhound-python -u svc_sql -p 'Password123!' -d lab.local -dc DC01.lab.local -ns 192.168.1.10 -c All
+
+# 3. Comprobación de jsons
+ls -la *.json
+
+# 4. Buscar todas las apariciones de svc_sql
+grep -ri "svc_sql" *.json
+
+# 5. filtrar de forma estructurada para ver los detalles de los usuarios y sus grupos utilizando jq
+jq '.data[] | select(.Properties.name | ascii_downcase | contains("svc_sql"))' 20261012185434_users.json
+
+# 6. Comprobar si pertenece a algún grupo privilegiado
+python3 -c "
+import json
+with open('20261012185434_groups.json') as f:
+    groups = json.load(f)['data']
+sid = 'S-1-5-21-2290074784-3261992843-2879826081-1106'
+for g in groups:
+    members = g.get('Members', [])
+    if any(m.get('ObjectIdentifier') == sid for m in members):
+        print('Pertenece a:', g['Properties']['name'])
+"
+
+

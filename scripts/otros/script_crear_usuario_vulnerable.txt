@@ -1,0 +1,23 @@
+# 1. Crear un usuario de dominio para el servicio (ejemplo: svc_sql) con una contraseña estándar
+$Password = ConvertTo-SecureString "Password123!" -AsPlainText -Force
+New-ADUser -Name "svc_sql" -SamAccountName "svc_sql" -UserPrincipalName "svc_sql@lab.local" -AccountPassword $Password -Enabled $true -PasswordNeverExpires $true -DisplayName "SQL Service Account"
+
+# 2. Registrar un SPN (Service Principal Name) a esta cuenta para hacerla vulnerable a Kerberoasting
+Set-ADUser -Identity "svc_sql" -ServicePrincipalNames @{Add="MSSQLSvc/sql-lab.lab.local:1433"} 
+
+# 3. Comprobar que el SPN se ha asignado correctamente
+setspn -L svc_sql
+
+
+Testuser:
+# 1. Comprobar políticas de contraseña
+Get-ADDefaultDomainPasswordPolicy 
+
+# 2. Eliminar el usuario actual por completo (sin pedir confirmación)
+Remove-ADUser -Identity "testuser" -Confirm:$false
+
+# 3. Volver a crearlo limpio con la contraseña débil pero compleja ("Password123!")
+$Password = ConvertTo-SecureString "Monkey123!" -AsPlainText -Force
+New-ADUser -Name "testuser" -SamAccountName "testuser" -AccountPassword $Password -Enabled $true -PasswordNeverExpires $true -DisplayName "Test User Weak Pass"
+
+
