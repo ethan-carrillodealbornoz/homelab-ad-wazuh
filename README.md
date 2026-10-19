@@ -74,7 +74,7 @@ El entorno simula una red corporativa con **Active Directory Domain Services (AD
         
     - Validación de conectividad y estado **Active** en el Dashboard.
         
-- [x] **Fase 4: Simulación Ofensiva
+- [x] **Fase 4**: Simulación Ofensiva
     
     - Configuración de cuentas vulnerables con SPN (`svc_mssql`) en Active Directory.
         
