@@ -4,46 +4,47 @@ Este repositorio contiene la documentación técnica, diagramas de arquitectura,
 
 El entorno simula una red corporativa con **Active Directory Domain Services (AD DS)** integrada con un **SIEM/XDR (Wazuh)** para la ingesta, análisis y correlación de eventos de seguridad en tiempo real.
 
----
-
 ## 📐 Arquitectura de Red y Topología
 
-```text
+```
                      [ Internet ]
                           │
                           ▼
               ┌───────────────────────┐
               │   pfSense (Gateway)   │
-              │     192.168.1.1       │
+              │      192.168.1.1      │
               └───────────┬───────────┘
                           │
-         ┌────────────────┴────────────────┐
-         │       Red Interna (LAN)         │
-         │        192.168.1.0/24           │
-         └────┬───────────────┬────────────┘
-              │               │
-              ▼               ▼
-     ┌────────────────┐  ┌──────────────────┐
-     │  SIEM-Wazuh    │  │       DC01       │
-     │  (Wazuh 4.14.8)│  │ (Windows Server) │
-     │  192.168.1.20  │  │   192.168.1.10   │
-     └────────────────┘  └────────┬─────────┘
-                                  │
-                                  ▼
-                         ┌──────────────────┐
-                         │  Win-11-Client   │
-                         │ (Estación jdoe)  │
-                         │  192.168.1.x     │
-                         └──────────────────┘
+          ┌───────────────┴────────────────┐
+          │        Red Interna (LAN)       │
+          │         192.168.1.0/24         │
+          └────┬───────────────┬───────────┘
+               │               │
+               ▼               ▼
+      ┌────────────────┐  ┌──────────────────┐
+      │  SIEM-Wazuh    │  │       DC01       │
+      │  (Wazuh 4.14.8)│  │ (Windows Server) │
+      │  192.168.1.20  │  │   192.168.1.10   │
+      └────────────────┘  └────────┬─────────┘
+                                   │
+                                   ▼
+                          ┌──────────────────┐
+                          │   Win-11-Client  │
+                          │ (Estación jdoe)  │
+                          │   192.168.1.x    │
+                          └──────────────────┘
 ```
+
 ## 🖥️ Matriz de Infraestructura y Nodos
 
-|**Nodo**|**Sistema Operativo**|**Rol / Servicio**|**IP Estática**|**Estado**|
+|   |   |   |   |   |
 |---|---|---|---|---|
+|**Nodo**|**Sistema Operativo**|**Rol / Servicio**|**IP Estática**|**Estado**|
 |`pfSense`|FreeBSD / pfSense|Firewall, Gateway, Router LAN|`192.168.1.1`|🟢 Activo|
 |`DC01`|Windows Server 2022|Domain Controller (`lab.local`), DNS, AD DS|`192.168.1.10`|🟢 Activo|
 |`Win-11-Client`|Windows 11 Enterprise|Estación de Trabajo (`jdoe`)|`DHCP / Static`|🟢 Activo|
 |`SIEM-Wazuh`|AlmaLinux / Wazuh OVA|SIEM/XDR Manager, Indexer, Dashboard|`192.168.1.20`|🟢 Activo|
+|`Kali-Linux`|Kali Linux|Equipo de Auditoría / Simulación Ofensiva|`192.168.1.x`|🟢 Activo|
 
 ## 🚀 Fases del Proyecto y Hoja de Ruta
 
@@ -59,7 +60,7 @@ El entorno simula una red corporativa con **Active Directory Domain Services (AD
         
     - Estructuración de Unidades Organizativas (`LAB_Corp`) y creación de cuentas (`jdoe`, `svc_mssql`).
         
-    - Unición de `Win-11-Client` al dominio y validación de inicio de sesión.
+    - Unión de `Win-11-Client` al dominio y validación de inicio de sesión.
         
     - Prueba de persistencia local y remediación de hijacking de `sethc.exe`.
         
@@ -73,26 +74,39 @@ El entorno simula una red corporativa con **Active Directory Domain Services (AD
         
     - Validación de conectividad y estado **Active** en el Dashboard.
         
-- [ ] **Fase 4: Telemetría Avanzada (Sysmon) [Siguiente Paso]**
+- [x] **Fase 4: Simulación Ofensiva
+    
+    - Configuración de cuentas vulnerables con SPN (`svc_mssql`) en Active Directory.
+        
+    - Extracción de tickets TGS cifrados con RC4 (`0x17`) desde Kali Linux usando Impacket (`GetUserSPNs`).
+          
+- [x] **Fase 5: Detección de Kerberoasting (Event ID 4769)**
+    
+    - Apertura de canales de telemetría de eventos de seguridad en `ossec.conf`.
+        
+    - Creación y validación de regla personalizada `100301` (`level 12`) con sintaxis `pcre2`.
+        
+    - Troubleshooting completo: desinhibición de filtros en agente, sincronización de reloj Kerberos (`Clock skew`) y reinicio efectivo del servicio `WazuhSvc`.
+    
+- [ ] **Fase 6: Telemetría Avanzada (Sysmon) y Ampliación de Threat Hunting [Siguiente Paso]**
     
     - Instalación de Sysmon64 con plantilla de reglas de _SwiftOnSecurity_.
         
     - Configuración del canal `Microsoft-Windows-Sysmon/Operational` en `ossec.conf`.
         
-- [ ] **Fase 5: Simulación Ofensiva y Threat Hunting**
-    
-    - Simulación de ataque Kerberoasting contra la cuenta de servicio `svc_mssql`.
-        
-    - Análisis de logs de eventos Event ID 4769 y alertas personalizadas en Wazuh.
+    - Detección de técnicas adicionales de MITRE ATT&CK (AS-REP Roasting, Pass-the-Hash, Process Injection).
         
 
 ## 📂 Estructura del Repositorio
 
-```Plaintext
+```
 .
 ├── README.md
 └── writeups/
-    ├── phase-1-network-pfsense.md
-    ├── phase-2-active-directory-setup.md
-    └── phase-3-wazuh-siem-deployment.md
+    ├── 01-pfsense-deployment.md
+    ├── 02-active-directory.md
+    ├── 03-SIEM Wazuh.md
+    ├── 04-Sysmon e integración con Wazuh.md
+    ├── 05-AD Kerberoasting y Post-Explotación.md
+    └── 06-Detección de Kerberoasting
 ```
